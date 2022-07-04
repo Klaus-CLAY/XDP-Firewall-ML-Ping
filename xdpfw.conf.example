@@ -1,4 +1,4 @@
-interface = "ens18";
+interface = "eth0";
 updatetime = 15;
 
 filters = (
