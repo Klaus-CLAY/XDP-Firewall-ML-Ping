@@ -1,10 +1,12 @@
 version: '3.0'
 services:
     ebpf-host1: &host
-        image: ebpf-host:1.0
-        hostname: ebpf-host1
+        image: ebpf-host:1.1
+        privileged: true
         stdin_open: true # docker run -i
         tty: true        # docker run -t
+        hostname: ebpf-host1
+        container_name: ebpf-host1
         volumes:
             - .:/app
         networks:
@@ -12,9 +14,19 @@ services:
     ebpf-host2:
         <<: *host
         hostname: ebpf-host2
+        container_name: ebpf-host2
     ebpf-host3:
         <<: *host
         hostname: ebpf-host3
+        container_name: ebpf-host3
+
 
 networks:
     ebpf-network:
+        # driver: bridge
+        # ipam:
+        #     driver: default
+        #     config:
+        #     - subnet: 172.100.0.0/16
+        # driver_opts:
+        #     com.docker.network.bridge.name: br_test
