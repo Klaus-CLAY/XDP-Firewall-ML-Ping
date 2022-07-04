@@ -1,0 +1,20 @@
+version: '3.0'
+services:
+    ebpf-host1: &host
+        image: ebpf-host:1.0
+        hostname: ebpf-host1
+        stdin_open: true # docker run -i
+        tty: true        # docker run -t
+        volumes:
+            - .:/app
+        networks:
+            - ebpf-network
+    ebpf-host2:
+        <<: *host
+        hostname: ebpf-host2
+    ebpf-host3:
+        <<: *host
+        hostname: ebpf-host3
+
+networks:
+    ebpf-network:
