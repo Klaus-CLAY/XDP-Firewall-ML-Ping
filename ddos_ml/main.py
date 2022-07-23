@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-# from pandas import read_csv
 import pandas as pd
 # from pandas.plotting import scatter_matrix
 # from matplotlib import pyplot
@@ -17,9 +16,6 @@ import numpy as np
 from pandas import DataFrame
 
 
-# TIME_INTERVAL = 1  # 1 second
-
-
 def process_flow(df):
     TIME_INTERVAL = df['Time'].max() - df['Time'].min()
     log_row = dict()
@@ -27,80 +23,35 @@ def process_flow(df):
     unique_src_ip_count = len(df['Source_ip'].unique())
     unique_src_port_count = len(df['Source_Port'].unique())
 
-    # print(unique_src_port_count)
-
     log_row['SSIP'] = unique_src_ip_count / TIME_INTERVAL
     log_row['SSP'] = unique_src_port_count / TIME_INTERVAL
     # log_row['SDFP']
     log_row['SDFB'] = df['Frame_length'].std()
     log_row['SFE'] = len(df) / TIME_INTERVAL
-
-    # int_flow_cnt = count_interactive_flows(df)
-    # print(f'interactive flow count: {int_flow_cnt}')
-    # log_row['RPF'] = 2*int_flow_cnt/len(df)
+    log_row['RPF'] = calc_pair_flow_ratio(df)
     return log_row
-    # print(log_row)
 
-# TODO: checking unique ips would be much faster!
-def count_interactive_flows(df):
-    count = 0
-    # unique_ips = df['Source_ip'].unique()
-    # print('hiii')
-    print('start...')
-    
-    a = df.apply(lambda row: check_interactive_flow(df, row['Source_ip'], row['Source_Port']), axis=1)
-    print(a)
-    print('end...')
+def calc_pair_flow_ratio(df):
+    inbound_socks = set(df.groupby(['Source_ip', 'Source_Port']).count().index)
+    outbound_socks = set(df.groupby(['Destination_IP', 'Destination_Port']).count().index)
 
-
-
-    # iii=0
-
-    # for _, row in df.iterrows():
-
-    #     print(f'iter_{iii}')
-    #     # print(f'index: {index}, row: {row}')
-    #     match_count = len(df.loc[(df['Destination_IP'] == row['Source_ip']) & (
-    #         df['Destination_Port'] == row['Source_Port'])])
-    #     if match_count > THRESHOLD:
-    #         count += 1
-
-    #     df.drop(df[(df['Source_ip'] == row['Source_ip']) & (
-    #         df['Source_Port'] == row['Source_Port'])].index, inplace=True)
-    #     # print(df.loc[(df['Destination_IP'] == row['Source_ip']) & (df['Destination_Port'] == row['Source_Port'])])
-    #     # print()
-    #     # break
-    #     iii += 1
-    return count
-
-def check_interactive_flow(df, source_ip, source_port):
-    THRESHOLD = 0
-    print('.',end='')
-
-    match_count = len(df.loc[(df['Destination_IP'] == source_ip) & (
-            df['Destination_Port'] == source_port)])
-    if match_count > THRESHOLD:
-        return 1
-    else:
-        return 0
+    return len(inbound_socks & outbound_socks) / len(inbound_socks)
 
 
 # time, frame_number, frame_length, src_ip, dst_ip, src_port, dst_port, syn, ack, rst, ttl, tcp_protocol
 
 dataset_file = r"datasets/BOUN_DDoS dataset/BOUN_TCP_Anon.csv"
 TARGET_IP = '10.50.199.86'
-df = pd.read_csv(dataset_file, nrows=4000000)[2000000:]
+df = pd.read_csv(dataset_file, nrows=6000000)[1000000:]
 df['Attack_Type'] = 'BENIGN'
-# print(df)
 df.loc[df['Destination_IP'] == TARGET_IP, 'Attack_Type'] = 'TCP_SYN'
 df = df[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
          'Destination_Port', 'Frame_length', "Attack_Type"]]
-# print('\n2:')
 
 print('malicious records count:', len(df[df['Attack_Type'] == 'TCP_SYN']), '/', len(df))
-attack_index_list = df[df['Attack_Type'] == 'TCP_SYN'].index
+print(df)
 
-
+# attack_index_list = df[df['Attack_Type'] == 'TCP_SYN'].index
 # textfile = open("attack_index_list.txt", "w")
 # for element in attack_index_list:
 #     textfile.write(str(element) + '\n')
@@ -128,28 +79,22 @@ attack_index_list = df[df['Attack_Type'] == 'TCP_SYN'].index
 # bits = 0
 # print(df.loc[(df['Attack_Type'] == 'TCP_SYN') & (df['Destination_Port'] == 80)])
 # # print(df[df['Attack_Type'] == 'TCP_SYN' and df['Destination_Port'] == 80])
-chunk_size = 20000
+
+chunk_size = 100000
 log_list = []
 for i in range(len(df)//chunk_size):
     # print(f'iter_{i}')
     log_list.append(process_flow(df[chunk_size*i:chunk_size*(i+1)]))
 
-# print(log_list)
 log_df = pd.DataFrame(log_list)
-# print()
-print(log_df)
 
 plt.plot(log_df.index, log_df['SSIP'], color="green")
 plt.plot(log_df.index, log_df['SSP'], color="red")
 plt.plot(log_df.index, log_df['SDFB'], color="blue")
 # plt.plot(log_df.index, log_df['SFE'], color="yellow")
 plt.show()
-
-# log_df = pd.DataFrame(columns=['SSIP', 'SSP', 'SDFP', 'SDFB', 'SFE', 'RPF'])
-# data = [['SSIP', 10], ['SSP', 10], ['SDFP', 10], ['SDFB', 10], ['SFE', 10], ['RPF', 10]]
-# log_df.append(data, ignore_index=True)
-# print(log_df)
-
+plt.plot(log_df.index, log_df['RPF'], color="purple")
+plt.show()
 
 print('*************************************************************')
 
