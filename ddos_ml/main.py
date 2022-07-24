@@ -17,19 +17,27 @@ import numpy as np
 # time, frame_number, frame_length, src_ip, dst_ip, src_port, dst_port, syn, ack, rst, ttl, tcp_protocol
 
 
-def process_flow(df):
+def process_flow(df, attack_intervals):
     log_row = dict()
     time_interval = df['Time'].max() - df['Time'].min()
+    # mean_time = df['Time'].mean()
+    # print(f'mean time: {mean_time}')
+
     unique_src_ip_count = len(df['Source_ip'].unique())
     unique_src_port_count = len(df['Source_Port'].unique())
 
+    log_row['Mean_Time'] = df['Time'].mean()
     log_row['SSIP'] = unique_src_ip_count / time_interval
     log_row['SSP'] = unique_src_port_count / time_interval
     # log_row['SDFP']
     # log_row['SDFB'] = df['Frame_length'].std()
     # log_row['SFE'] = len(df) / time_interval
     log_row['RPF'] = calc_pair_flow_ratio(df)
-
+    log_row['Traffic_Type'] = BENIGN_TRAFFIC
+    for interval in attack_intervals:
+        if log_row['Mean_Time'] >= interval[0] and log_row['Mean_Time'] <= interval[1]:
+            log_row['Traffic_Type'] = MALICOUS_TRAFFIC
+    
     return log_row
 
 
@@ -44,7 +52,7 @@ def calc_pair_flow_ratio(df):
 def get_attack_intervals(df):
     threshold = 10
     attack_intervals = []
-    times_list = df.loc[df['Attack_Type'] == MALICOUS_TRAFFIC, 'Time']
+    times_list = df.loc[df['Traffic_Type'] == MALICOUS_TRAFFIC, 'Time']
     begin = times_list.iloc[0]
     end = times_list.iloc[0]
     for t in times_list:
@@ -67,49 +75,40 @@ VICTIM_IP = '10.50.199.86'
 BENIGN_TRAFFIC = 0
 MALICOUS_TRAFFIC = 1
 dataset_file = r"datasets/BOUN_DDoS dataset/BOUN_TCP_Anon.csv"
-df = pd.read_csv(dataset_file, nrows=6000000)[1000000:]
-df['Attack_Type'] = BENIGN_TRAFFIC
-df.loc[df['Destination_IP'] == VICTIM_IP, 'Attack_Type'] = MALICOUS_TRAFFIC
+df = pd.read_csv(dataset_file)[1000000:]
+df['Traffic_Type'] = BENIGN_TRAFFIC
+df.loc[df['Destination_IP'] == VICTIM_IP, 'Traffic_Type'] = MALICOUS_TRAFFIC
 df = df[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
-         'Destination_Port', 'Frame_length', "Attack_Type"]]
+         'Destination_Port', 'Frame_length', "Traffic_Type"]]
+attack_intervals = get_attack_intervals(df)
 
+mal_packet_count = len(df[df['Traffic_Type'] == MALICOUS_TRAFFIC])
+print(f'malicious records count: {mal_packet_count} / {len(df)}')
+print(f'attack intervals: {attack_intervals}')
+# print(df)
 
-print(get_attack_intervals(df))
+# attack_index_list = df.loc[df['Traffic_Type'] == MALICOUS_TRAFFIC, 'Time']
+# textfile = open("attack_time_list.txt", "w")
+# for element in attack_index_list:
+#     textfile.write(str(element) + '\n')
+# textfile.close()
 
-print('malicious records count:', len(
-    df[df['Attack_Type'] == MALICOUS_TRAFFIC]), '/', len(df))
-print(df)
-
-attack_index_list = df.loc[df['Attack_Type'] == MALICOUS_TRAFFIC, 'Time']
-textfile = open("attack_time_list.txt", "w")
-for element in attack_index_list:
-    textfile.write(str(element) + '\n')
-    # textfile.write('\n')
-textfile.close()
-
-
-# print(df.groupby('Source_ip').count())
-# print(df.loc[(df['Source_ip'] == '10.50.197.71') | (df['Destination_IP'] == '10.50.197.71')])
-
-# df["SYN"] = df["SYN"].fillna(0)
-# df["ACK"] = df["ACK"].fillna(0)
-# df["SYN"] = df["SYN"].replace(['Set', 'Not set'], [1, 0])
-# df["ACK"] = df["ACK"].replace(['Set', 'Not set'], [1, 0])
-# df["Time"] = df["Time"].fillna(0)
-
-CHUNK_SIZE = 100000
+CHUNK_SIZE = 10000
 log_list = []
 for i in range(len(df)//CHUNK_SIZE):
-    log_list.append(process_flow(df[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]))
+    log_list.append(process_flow(df[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)], attack_intervals))
 
 log_df = pd.DataFrame(log_list)
+log_df.to_csv('datasets/TCP_SYN.csv', index=False)
 
-plt.plot(log_df.index, log_df['SSIP'], color="green")
-plt.plot(log_df.index, log_df['SSP'], color="red")
+plt.plot(log_df['Mean_Time'], log_df['SSIP'], color="green")
+plt.plot(log_df['Mean_Time'], log_df['SSP'], color="red")
 # plt.plot(log_df.index, log_df['SDFB'], color="blue")
 # plt.plot(log_df.index, log_df['SFE'], color="yellow")
 plt.show()
-plt.plot(log_df.index, log_df['RPF'], color="purple")
+plt.plot(log_df['Mean_Time'], log_df['RPF'], color="purple")
+plt.show()
+plt.plot(log_df['Mean_Time'], log_df['Traffic_Type'], color="orange")
 plt.show()
 ###################################################################################################
 
