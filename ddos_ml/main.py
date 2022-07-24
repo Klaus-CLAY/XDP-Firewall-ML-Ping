@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-# from pandas.plotting import scatter_matrix
-# from matplotlib import pyplot
 # from sklearn.model_selection import train_test_split
 # from sklearn.model_selection import cross_val_score
 # from sklearn.model_selection import StratifiedKFold
@@ -13,7 +11,6 @@ import pandas as pd
 # from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import numpy as np
 # import seaborn as sns
-# from pandas import DataFrame
 # time, frame_number, frame_length, src_ip, dst_ip, src_port, dst_port, syn, ack, rst, ttl, tcp_protocol
 
 class Stage1:
@@ -33,7 +30,7 @@ class Stage1:
         mal_packet_count = len(df[df['Traffic_Type'] == self.MALICOUS_TRAFFIC])
         print(f'malicious records count: {mal_packet_count} / {len(df)}')
 
-        self.attack_intervals = stage1.get_attack_intervals(df)
+        self.attack_intervals = self.__get_attack_intervals(df)
         print(f'attack intervals: {self.attack_intervals}')
         
         return df
@@ -68,7 +65,7 @@ class Stage1:
         
         return log_row
 
-    def get_attack_intervals(self, df):
+    def __get_attack_intervals(self, df):
         threshold = 10
         attack_intervals = []
         times_list = df.loc[df['Traffic_Type'] == self.MALICOUS_TRAFFIC, 'Time']
