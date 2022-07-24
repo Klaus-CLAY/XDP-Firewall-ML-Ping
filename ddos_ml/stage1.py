@@ -13,7 +13,7 @@ import numpy as np
 # import seaborn as sns
 # time, frame_number, frame_length, src_ip, dst_ip, src_port, dst_port, syn, ack, rst, ttl, tcp_protocol
 
-class Stage1:
+class FlowDfGenerator:
     def __init__(self, victim_ip):
         self.VICTIM_IP = victim_ip
         self.BENIGN_TRAFFIC = 0
@@ -95,11 +95,11 @@ class Stage1:
 
 
 
-stage1 = Stage1(victim_ip='10.50.199.86')
+flow_df_generator = FlowDfGenerator(victim_ip='10.50.199.86')
 
 # TCP SYN flood dataset
-df = stage1.do_preprocessings(r'datasets/BOUN_DDoS dataset/BOUN_TCP_Anon.csv', begin=1000000)
-flow_df = stage1.generate_flow_dataframe(df, chunk_size=10000)
+df = flow_df_generator.do_preprocessings(r'datasets/BOUN_DDoS dataset/BOUN_TCP_Anon.csv', begin=1000000)
+flow_df = flow_df_generator.generate_flow_dataframe(df, chunk_size=10000)
 flow_df.to_csv('datasets/TCP_SYN_FLOODING.csv', index=False)
 plt.plot(flow_df['Mean_Time'], flow_df['SSIP'], color="green")
 plt.plot(flow_df['Mean_Time'], flow_df['SSP'], color="red")
@@ -115,8 +115,8 @@ plt.show()
 print()
 ################################################################################
 # UDP flood dataset
-df = stage1.do_preprocessings(r'datasets/BOUN_DDoS dataset/BOUN_UDP_Anon.csv')
-flow_df = stage1.generate_flow_dataframe(df, chunk_size=10000)
+df = flow_df_generator.do_preprocessings(r'datasets/BOUN_DDoS dataset/BOUN_UDP_Anon.csv')
+flow_df = flow_df_generator.generate_flow_dataframe(df, chunk_size=10000)
 flow_df.to_csv('datasets/UDP_FLOODING.csv', index=False)
 plt.plot(flow_df['Mean_Time'], flow_df['SSIP'], color="green")
 plt.plot(flow_df['Mean_Time'], flow_df['SSP'], color="red")
