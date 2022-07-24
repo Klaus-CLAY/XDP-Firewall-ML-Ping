@@ -13,7 +13,7 @@ import pandas as pd
 # from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import numpy as np
 # import seaborn as sns
-from pandas import DataFrame
+# from pandas import DataFrame
 # time, frame_number, frame_length, src_ip, dst_ip, src_port, dst_port, syn, ack, rst, ttl, tcp_protocol
 
 
@@ -41,24 +41,51 @@ def calc_pair_flow_ratio(df):
     return len(inbound_socks & outbound_socks) / len(inbound_socks)
 
 
+def get_attack_intervals(df):
+    threshold = 10
+    attack_intervals = []
+    times_list = df.loc[df['Attack_Type'] == MALICOUS_TRAFFIC, 'Time']
+    begin = times_list.iloc[0]
+    end = times_list.iloc[0]
+    for t in times_list:
+        delta = t - end
+        if t == times_list.iloc[len(times_list)-1]:
+            attack_intervals.append((begin, end))
+            break
+
+        if delta <= threshold:
+            end = t
+        else:
+            attack_intervals.append((begin, end))
+            begin = t
+            end = t
+
+    return attack_intervals
+
+
+VICTIM_IP = '10.50.199.86'
+BENIGN_TRAFFIC = 0
+MALICOUS_TRAFFIC = 1
 dataset_file = r"datasets/BOUN_DDoS dataset/BOUN_TCP_Anon.csv"
-TARGET_IP = '10.50.199.86'
 df = pd.read_csv(dataset_file, nrows=6000000)[1000000:]
-df['Attack_Type'] = 'BENIGN'
-df.loc[df['Destination_IP'] == TARGET_IP, 'Attack_Type'] = 'TCP_SYN'
+df['Attack_Type'] = BENIGN_TRAFFIC
+df.loc[df['Destination_IP'] == VICTIM_IP, 'Attack_Type'] = MALICOUS_TRAFFIC
 df = df[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
          'Destination_Port', 'Frame_length', "Attack_Type"]]
 
+
+print(get_attack_intervals(df))
+
 print('malicious records count:', len(
-    df[df['Attack_Type'] == 'TCP_SYN']), '/', len(df))
+    df[df['Attack_Type'] == MALICOUS_TRAFFIC]), '/', len(df))
 print(df)
 
-# attack_index_list = df[df['Attack_Type'] == 'TCP_SYN'].index
-# textfile = open("attack_index_list.txt", "w")
-# for element in attack_index_list:
-#     textfile.write(str(element) + '\n')
-#     # textfile.write('\n')
-# textfile.close()
+attack_index_list = df.loc[df['Attack_Type'] == MALICOUS_TRAFFIC, 'Time']
+textfile = open("attack_time_list.txt", "w")
+for element in attack_index_list:
+    textfile.write(str(element) + '\n')
+    # textfile.write('\n')
+textfile.close()
 
 
 # print(df.groupby('Source_ip').count())
