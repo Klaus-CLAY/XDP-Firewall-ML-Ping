@@ -26,11 +26,11 @@ class FlowDfGenerator:
 
         return df
 
-    def generate_flow_dataframe(self, df, chunk_size=10000):
+    def generate_flow_dataframe(self, df, chunk_size=10000, is_labeled=True):
         flow_list = []
         for i in range(len(df)//chunk_size):
             flow_list.append(self.__process_packet_flows(
-                df[chunk_size*i:chunk_size*(i+1)], self.attack_intervals))
+                df[chunk_size*i:chunk_size*(i+1)], self.attack_intervals, is_labeled))
 
         return pd.DataFrame(flow_list)
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         r'datasets/BOUN_DDoS dataset/BOUN_TCP_Anon.csv', begin=1000000)
     flow_df = flow_df_generator.generate_flow_dataframe(df, chunk_size=10000)
     # saving
-    flow_df.to_csv('datasets/TCP_SYN_FLOODING.csv', index=False)
+    # flow_df.to_csv('datasets/TCP_SYN_FLOODING.csv', index=False)
     plt.plot(flow_df['Mean_Time'], flow_df['SSIP'], color="green")
     plt.plot(flow_df['Mean_Time'], flow_df['SSP'], color="red")
     plt.show()
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         r'datasets/BOUN_DDoS dataset/BOUN_UDP_Anon.csv')
     flow_df = flow_df_generator.generate_flow_dataframe(df, chunk_size=10000)
     # saving
-    flow_df.to_csv('datasets/UDP_FLOODING.csv', index=False)
+    # flow_df.to_csv('datasets/UDP_FLOODING.csv', index=False)
     plt.plot(flow_df['Mean_Time'], flow_df['SSIP'], color="green")
     plt.plot(flow_df['Mean_Time'], flow_df['SSP'], color="red")
     plt.show()

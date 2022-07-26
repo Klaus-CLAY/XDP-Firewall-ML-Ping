@@ -2,9 +2,10 @@ from numpy import NAN
 from scapy.all import *
 from scapy.layers.inet import *
 import pandas as pd
+from stage1 import FlowDfGenerator
 
 # capture = sniff(iface='wlp3s0', filter='ip', count=1000)
-capture = sniff(iface='lo', filter='ip', timeout=1)
+capture = sniff(iface='lo', filter='ip', timeout=5)
 # print(capture.summary())
 
 packet_list = []
@@ -37,8 +38,21 @@ packet_df = pd.DataFrame(packet_list)[["Time", "Source_ip", 'Source_Port', 'Dest
                                        'Destination_Port', 'Frame_length']]
 print(packet_df)
 
-
-
+flow_df_generator = FlowDfGenerator()
+flow_df = flow_df_generator.generate_flow_dataframe(packet_df, chunk_size=1000, is_labeled=False)
+# saving
+# flow_df.to_csv('datasets/TCP_SYN_FLOODING.csv', index=False)
+plt.plot(flow_df['Mean_Time'], flow_df['SSIP'], color="green")
+plt.plot(flow_df['Mean_Time'], flow_df['SSP'], color="red")
+plt.show()
+plt.plot(flow_df['Mean_Time'], flow_df['SDFB'], color="blue")
+plt.show()
+plt.plot(flow_df['Mean_Time'], flow_df['SFE'], color="yellow")
+plt.show()
+plt.plot(flow_df['Mean_Time'], flow_df['RPF'], color="purple")
+plt.show()
+# plt.plot(flow_df['Mean_Time'], flow_df['Traffic_Type'], color="orange")
+# plt.show()
 # print(df)
 
 # print('got 2000 packets')
