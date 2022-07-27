@@ -54,17 +54,19 @@ if __name__ == '__main__':
     SNIFF_DUR = 1
     flow_df_generator = FlowDfGenerator()
     flow_df = pd.DataFrame()
-    while True:
-        packet_df = sniff_packet_df('lo', sniff_timeout=SNIFF_DUR)
-        flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
-            packet_df, is_labeled=False)])
-        
-        # print logs of features
-        print()
-        for feature in flow_df.iloc[-1]:
-            print("{0:.6f}".format(feature), end='\t')
 
-        if bool(args.dump_traffic):
+
+    if bool(args.dump_traffic):
+        while True:
+            packet_df = sniff_packet_df('lo', sniff_timeout=SNIFF_DUR)
+            flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
+                packet_df, is_labeled=False)])
+            
+            # print logs of features
+            print()
+            for feature in flow_df.iloc[-1]:
+                print("{0:.6f}".format(feature), end='\t')
+
             if len(flow_df)*SNIFF_DUR > int(args.dump_period):
                 # saving
                 flow_df.to_csv('output1.csv', index=False)
@@ -78,8 +80,8 @@ if __name__ == '__main__':
                 plt.plot(flow_df['Mean_Time'], flow_df['RPF'], color="purple")
                 plt.show()
                 break
-        else:
-            print('analyzing')
+    else:
+        print('analyzing')
 
     
     # plt.plot(flow_df['Mean_Time'], flow_df['Traffic_Type'], color="orange")
