@@ -26,7 +26,10 @@ class FlowDfGenerator:
 
         return df
 
-    def generate_flow_dataframe(self, df, chunk_size=10000, is_labeled=True):
+    def generate_flow_dataframe(self, df, chunk_size=None, is_labeled=True):
+        if chunk_size is None:
+            return pd.DataFrame([self.__process_packet_flows(df, self.attack_intervals, is_labeled)])
+
         flow_list = []
         for i in range(len(df)//chunk_size):
             start = chunk_size*i

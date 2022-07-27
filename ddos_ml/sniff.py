@@ -48,9 +48,9 @@ while True:
     packet_df = sniff_packet_df('lo')
     # print(packet_df)
     flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
-        packet_df, chunk_size=20, is_labeled=False)])
+        packet_df, is_labeled=False)])
     print(flow_df)
-    if len(flow_df) > 3000:
+    if len(flow_df) > 60:
         break
 
 # saving
