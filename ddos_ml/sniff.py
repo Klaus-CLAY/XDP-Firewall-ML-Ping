@@ -39,49 +39,36 @@ def sniff_packet_df(sniff_if, sniff_filter='ip', sniff_timeout=1):
     return pd.DataFrame(packet_list)[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
                                       'Destination_Port', 'Frame_length']]
 
+# def save_to_csv(output_file_path, df_row):
+#     df_row.to_csv(output_file_path, mode='a', index=False, header=not os.path.exists(output_file_path))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dump', '-d', dest='dump_traffic',
                         help='give this flag to capture and dump the traffic', action='store_true', default=False)
-    parser.add_argument('--dump-period', '-dp', dest='dump_period',
-                        help='specify period of dump', default='60')
     parser.add_argument('--dump-output', '-do', dest='dump_output',
                         help='specify a name for output file', default='dump.csv')
     args = parser.parse_args()
 
     CURR_EPOCH_TIME = int(time.time())
-    SNIFF_DUR = 1
+    DDOS_THRESHOLD = 5  # 5 consecutive malicious flows -> Block!
     flow_df_generator = FlowDfGenerator()
     flow_df = pd.DataFrame()
+    while True:
+        packet_df = sniff_packet_df('lo', sniff_timeout=1)
+        flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
+            packet_df, is_labeled=False)])
+        if args.dump_traffic:
+            flow_df.tail(1).to_csv(args.dump_output, mode='a', index=False, header=not os.path.exists(args.dump_output))
+            # save_to_csv(args.dump_output, flow_df.tail(1))
+        
+        # print logs of features
+        print()
+        for feature in flow_df.iloc[-1]:
+            print("{0:.6f}".format(feature), end='\t')
 
-
-    if bool(args.dump_traffic):
-        while True:
-            packet_df = sniff_packet_df('lo', sniff_timeout=SNIFF_DUR)
-            flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
-                packet_df, is_labeled=False)])
-            
-            # print logs of features
-            print()
-            for feature in flow_df.iloc[-1]:
-                print("{0:.6f}".format(feature), end='\t')
-
-            if len(flow_df)*SNIFF_DUR > int(args.dump_period):
-                # saving
-                flow_df.to_csv('output1.csv', index=False)
-                plt.plot(flow_df['Mean_Time'], flow_df['SSIP'], color="green")
-                plt.plot(flow_df['Mean_Time'], flow_df['SSP'], color="red")
-                plt.show()
-                plt.plot(flow_df['Mean_Time'], flow_df['SDFB'], color="blue")
-                plt.show()
-                plt.plot(flow_df['Mean_Time'], flow_df['SFE'], color="yellow")
-                plt.show()
-                plt.plot(flow_df['Mean_Time'], flow_df['RPF'], color="purple")
-                plt.show()
-                break
-    else:
-        print('analyzing')
+        # TODO: add analyzing argparse (boolean flag)
+        # TODO: analyzing
 
     
     # plt.plot(flow_df['Mean_Time'], flow_df['Traffic_Type'], color="orange")
