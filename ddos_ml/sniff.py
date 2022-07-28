@@ -1,4 +1,5 @@
 import argparse
+import pickle
 from numpy import NAN
 from scapy.all import *
 from scapy.layers.inet import *
@@ -57,13 +58,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     CURR_EPOCH_TIME = int(time.time())
-    DDOS_THRESHOLD = 5  # 5 consecutive malicious flows -> Block!
+    DDOS_THRESHOLD = 2  # 2 consecutive malicious flows -> Block!
+    with open('dt_model.pkl', 'rb') as f:
+        loaded_model = pickle.load(f)
     flow_df_generator = FlowDfGenerator()
     flow_df = pd.DataFrame()
     while True:
         packet_df = sniff_packet_df(args.interface, sniff_timeout=1)
         flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
             packet_df, is_labeled=False)])
+        if len(flow_df) > DDOS_THRESHOLD:
+            flow_df = flow_df.tail(DDOS_THRESHOLD)
         if args.dump_traffic:
             flow_df.tail(1).to_csv(args.dump_output, mode='a',
                                    index=False, header=not os.path.exists(args.dump_output))
@@ -75,8 +80,8 @@ if __name__ == '__main__':
             print("{0:.6f}".format(feature), end='\t')
 
         if args.operate:
-            # TODO: analyzing
-            print('analyzing')
+            x = flow_df[flow_df.columns.difference(['Mean_Time'])]
+            print(f'--> {list(loaded_model.predict(x))}', end='')
 
 
     # plt.plot(flow_df['Mean_Time'], flow_df['Traffic_Type'], color="orange")

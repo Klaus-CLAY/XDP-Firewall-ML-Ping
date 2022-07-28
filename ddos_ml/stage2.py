@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
+import pickle
 
 def compare_results(a, b):
     cmp = []
@@ -32,8 +33,16 @@ if __name__ == '__main__':
 
     dtree = DecisionTreeClassifier()
     dtree = dtree.fit(x_train, y_train)
+    # dtree.save('dt_model.h5')
 
-    y_test_predict = dtree.predict(x_test)
+    # save
+    with open('dt_model.pkl','wb') as f:
+        pickle.dump(dtree,f)
+    # load
+    with open('dt_model.pkl', 'rb') as f:
+        loaded_model = pickle.load(f)
+
+    y_test_predict = loaded_model.predict(x_test)
 
     diff = compare_results(list(y_test), list(y_test_predict))
     print(f'accuracy: {(1 - len(diff) / len(y_test))*100}%')
