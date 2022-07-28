@@ -22,13 +22,13 @@ RUN echo ***************************************7
 RUN apt-get install iputils-ping -y
 RUN echo ***************************************8
 RUN apt-get install net-tools bash bash-completion -y
-# RUN apt-get install python3 pip -y
-# RUN apt-get install kmod -y
-# RUN pip install numpy
-# RUN pip install matplotlib
-# RUN pip install scapy
-WORKDIR /app
-COPY . .
-# COPY libbpf libbpf
-# COPY other other
+
+# WORKDIR /app-ddos-detection
+WORKDIR /app-xdp-fw
+COPY libbpf libbpf
+COPY other other
+COPY src src
+COPY Makefile .
+COPY xdpfw.conf.example .
+
 CMD ["bash"]
