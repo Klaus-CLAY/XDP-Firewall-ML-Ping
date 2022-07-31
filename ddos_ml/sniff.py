@@ -91,7 +91,7 @@ def json_to_xdp_fw_conf(json_cfg):
     return fw_conf
 
 
-def block_interface(conf_file_path):
+def change_xdp_fw_config(conf_file_path):
     raw_file_str = ''
     with open(conf_file_path, 'r') as f:
         for line in f:
@@ -108,9 +108,7 @@ def block_interface(conf_file_path):
         cfg['filters'] = [{'enabled': 'true', 'action': '0'}]
         print('(level 2 action) interface blocked completely!')
 
-    print(cfg['filters'])
     xdp_fw_conf = json_to_xdp_fw_conf(cfg)
-
     with open(conf_file_path, "w") as f:
         f.write(xdp_fw_conf)
 
@@ -128,13 +126,16 @@ if __name__ == '__main__':
                         help='specify an interface to sniff on', default='lo')
     args = parser.parse_args()
 
-    CURR_EPOCH_TIME = int(time.time())
-    DDOS_THRESHOLD = 2  # 2 consecutive malicious flows -> Block!
+    # n consecutive malicious flows -> Block!
+    DDOS_THRESHOLD = 2
+    # n seconds after changing to whitelist if problem still exists, block the interface
+    IF_BLOCK_THRESHOLD = 10
     NORMAL_TRAFFIC = 0
     MAL_TRAFFIC = 1
     XDP_FW_CONF_PATH = 'xdpfw.conf.example'
+    CURR_EPOCH_TIME = int(time.time())
+    operation_timestamp = 0
 
-    block_interface(XDP_FW_CONF_PATH)
     with open('dt_model.pkl', 'rb') as f:
         loaded_model = pickle.load(f)
     flow_df_generator = FlowDfGenerator()
@@ -157,10 +158,14 @@ if __name__ == '__main__':
         x = flow_df[flow_df.columns.difference(['Mean_Time'])]
         predicted_list = list(loaded_model.predict(x))
         traffic_type = MAL_TRAFFIC if (all(predicted_list) and
-                                        len(predicted_list) >= DDOS_THRESHOLD) else NORMAL_TRAFFIC
-        print(f"--> {predicted_list}, {'Malicious' if traffic_type == MAL_TRAFFIC else 'Normal'}")
+                                       len(predicted_list) >= DDOS_THRESHOLD) else NORMAL_TRAFFIC
+        print(
+            f"--> {predicted_list}, {'Malicious' if traffic_type == MAL_TRAFFIC else 'Normal'}")
 
-        if args.operate:
+        if args.operate and (time.time() - operation_timestamp) > IF_BLOCK_THRESHOLD:
             if traffic_type == MAL_TRAFFIC:
-                print(f'interface \'{args.interface}\' is blocked except for the whitelists!')
-                # TODO: edit xdp-firewall's config file
+                print(
+                    f'attempting to reduce traffic on interface \'{args.interface}\'')
+                # edit xdp-firewall's config file
+                change_xdp_fw_config(XDP_FW_CONF_PATH)
+                operation_timestamp = time.time()
