@@ -42,10 +42,13 @@ def sniff_packet_df(sniff_if, sniff_filter='ip', sniff_timeout=1):
     return pd.DataFrame(packet_list)[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
                                       'Destination_Port', 'Frame_length']]
 
-def parse_xdp_fw_conf(raw_file_str):
+
+def xdp_fw_conf_to_json(raw_file_str):
     conf = dict()
-    conf['interface'] = re.search(r'^interface\s*=\s*\"(.*)\";$', raw_file_str, re.MULTILINE).group(1)
-    conf['updatetime'] = re.search(r'^updatetime\s*=\s*(.*);$', raw_file_str, re.MULTILINE).group(1)
+    conf['interface'] = re.search(
+        r'^interface\s*=\s*\"(.*)\";$', raw_file_str, re.MULTILINE).group(1)
+    conf['updatetime'] = re.search(
+        r'^updatetime\s*=\s*(.*);$', raw_file_str, re.MULTILINE).group(1)
 
     begin = raw_file_str.find('(')
     end = raw_file_str.find(')')
@@ -61,13 +64,55 @@ def parse_xdp_fw_conf(raw_file_str):
     conf['filters'] = json.loads(filters_str)
     return conf
 
+
+def json_to_xdp_fw_conf(json_cfg):
+    fw_conf = ''
+    fw_conf += f"interface = \"{json_cfg['interface']}\";\n"
+    fw_conf += f"updatetime = {json_cfg['updatetime']};\n"
+    fw_conf += "filters = (\n"
+    for _filter in json_cfg['filters']:
+        fw_conf += "\t{\n"
+        count = 0
+        for key, val in _filter.items():
+            count += 1
+            delimiter = '' if count == len(_filter) else ','
+            try:
+                if val != 'true' and val != 'false':
+                    int(val)
+                fw_conf += f"\t\t{key} = {val}{delimiter}\n"
+            except:
+                fw_conf += f"\t\t{key} = \"{val}\"{delimiter}\n"
+        fw_conf += "\t}"
+        if _filter != json_cfg['filters'][-1]:
+            fw_conf += ","
+        fw_conf += "\n"
+    fw_conf += ");"
+
+    return fw_conf
+
+
 def block_interface(conf_file_path):
     raw_file_str = ''
     with open(conf_file_path, 'r') as f:
         for line in f:
             raw_file_str += line
-    filters = parse_xdp_fw_conf(raw_file_str)
-    print(filters)
+    cfg = xdp_fw_conf_to_json(raw_file_str)
+
+    try:
+        if cfg['filters'][-1]['enabled'] == 'true' and cfg['filters'][-1]['action'] == '1' and len(cfg['filters'][-1]) == 2:
+            cfg['filters'][-1]['action'] = '0'
+            print('(level 1 action) blacklist changed to whitelist!')
+        else:
+            raise Exception
+    except:
+        cfg['filters'] = [{'enabled': 'true', 'action': '0'}]
+        print('(level 2 action) interface blocked completely!')
+
+    print(cfg['filters'])
+    xdp_fw_conf = json_to_xdp_fw_conf(cfg)
+
+    with open(conf_file_path, "w") as f:
+        f.write(xdp_fw_conf)
 
 
 if __name__ == '__main__':
@@ -107,7 +152,7 @@ if __name__ == '__main__':
         # print metrics
         for feature in flow_df.iloc[-1]:
             print("{0:.6f}".format(feature), end='\t')
-        
+
         # print traffic type
         x = flow_df[flow_df.columns.difference(['Mean_Time'])]
         predicted_list = list(loaded_model.predict(x))
