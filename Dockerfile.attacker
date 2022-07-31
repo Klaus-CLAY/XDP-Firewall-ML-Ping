@@ -1,0 +1,23 @@
+FROM ubuntu:20.04
+
+ENV TZ=Asia/Dubai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt update
+RUN echo ***************************************0
+RUN apt install python3 -y
+RUN echo ***************************************1
+RUN apt install python3-scapy -y
+RUN echo ***************************************2
+RUN apt install iproute2 tcpreplay -y
+RUN echo ***************************************3
+RUN apt install vim -y
+RUN echo ***************************************4
+RUN apt install iputils-ping -y
+RUN echo ***************************************5
+RUN apt install net-tools bash bash-completion -y
+
+WORKDIR /traffic_generator
+COPY ddos_ml/traffic_generator.py .
+
+CMD ["bash"]
