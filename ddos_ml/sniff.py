@@ -1,10 +1,12 @@
 import argparse
+import json
 import pickle
 from numpy import NAN
 from scapy.all import *
 from scapy.layers.inet import *
 import pandas as pd
 import time
+import re
 from stage1 import FlowDfGenerator
 
 
@@ -40,6 +42,33 @@ def sniff_packet_df(sniff_if, sniff_filter='ip', sniff_timeout=1):
     return pd.DataFrame(packet_list)[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
                                       'Destination_Port', 'Frame_length']]
 
+def parse_xdp_fw_conf(raw_file_str):
+    conf = dict()
+    conf['interface'] = re.search(r'^interface\s*=\s*\"(.*)\";$', raw_file_str, re.MULTILINE).group(1)
+    conf['updatetime'] = re.search(r'^updatetime\s*=\s*(.*);$', raw_file_str, re.MULTILINE).group(1)
+
+    begin = raw_file_str.find('(')
+    end = raw_file_str.find(')')
+    filters_str = raw_file_str[begin+1:end]
+    filters_str = re.sub('\s', '', filters_str)
+    filters_str = re.sub('=', ':', filters_str)
+    filters_str = re.sub(';', ',', filters_str)
+    filters_str = re.sub('\(', '[', filters_str)
+    filters_str = re.sub('\)', ']', filters_str)
+    filters_str = re.sub('([\w.]+)', '"\g<1>"', filters_str)
+    filters_str = re.sub('""', '"', filters_str)
+    filters_str = f"[{filters_str}]"
+    conf['filters'] = json.loads(filters_str)
+    return conf
+
+def block_interface(conf_file_path):
+    raw_file_str = ''
+    with open(conf_file_path, 'r') as f:
+        for line in f:
+            raw_file_str += line
+    filters = parse_xdp_fw_conf(raw_file_str)
+    print(filters)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -58,6 +87,9 @@ if __name__ == '__main__':
     DDOS_THRESHOLD = 2  # 2 consecutive malicious flows -> Block!
     NORMAL_TRAFFIC = 0
     MAL_TRAFFIC = 1
+    XDP_FW_CONF_PATH = 'xdpfw.conf.example'
+
+    block_interface(XDP_FW_CONF_PATH)
     with open('dt_model.pkl', 'rb') as f:
         loaded_model = pickle.load(f)
     flow_df_generator = FlowDfGenerator()
