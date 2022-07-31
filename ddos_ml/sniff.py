@@ -40,9 +40,6 @@ def sniff_packet_df(sniff_if, sniff_filter='ip', sniff_timeout=1):
     return pd.DataFrame(packet_list)[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
                                       'Destination_Port', 'Frame_length']]
 
-# def save_to_csv(output_file_path, df_row):
-#     df_row.to_csv(output_file_path, mode='a', index=False, header=not os.path.exists(output_file_path))
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -59,6 +56,8 @@ if __name__ == '__main__':
 
     CURR_EPOCH_TIME = int(time.time())
     DDOS_THRESHOLD = 2  # 2 consecutive malicious flows -> Block!
+    NORMAL_TRAFFIC = 0
+    MAL_TRAFFIC = 1
     with open('dt_model.pkl', 'rb') as f:
         loaded_model = pickle.load(f)
     flow_df_generator = FlowDfGenerator()
@@ -72,28 +71,19 @@ if __name__ == '__main__':
         if args.dump_traffic:
             flow_df.tail(1).to_csv(args.dump_output, mode='a',
                                    index=False, header=not os.path.exists(args.dump_output))
-            # save_to_csv(args.dump_output, flow_df.tail(1))
 
-        # print logs of features
-        print()
+        # print metrics
         for feature in flow_df.iloc[-1]:
             print("{0:.6f}".format(feature), end='\t')
+        
+        # print traffic type
+        x = flow_df[flow_df.columns.difference(['Mean_Time'])]
+        predicted_list = list(loaded_model.predict(x))
+        traffic_type = MAL_TRAFFIC if (all(predicted_list) and
+                                        len(predicted_list) >= DDOS_THRESHOLD) else NORMAL_TRAFFIC
+        print(f"--> {predicted_list}, {'Malicious' if traffic_type == MAL_TRAFFIC else 'Normal'}")
 
         if args.operate:
-            x = flow_df[flow_df.columns.difference(['Mean_Time'])]
-            print(f'--> {list(loaded_model.predict(x))}', end='')
-
-
-    # plt.plot(flow_df['Mean_Time'], flow_df['Traffic_Type'], color="orange")
-    # plt.show()
-    # print(df)
-
-    # print('got 2000 packets')
-    # for packet in capture:
-    #     print(packet.summary())
-    #     # print(packet['IP'].src)
-    #     # print(packet.time)
-    #     # print(len(packet['IP']))
-    #     # print('******************************')
-
-    # # wrpcap("packets.pcap", capture)
+            if traffic_type == MAL_TRAFFIC:
+                print(f'interface \'{args.interface}\' is blocked except for the whitelists!')
+                # TODO: edit xdp-firewall's config file
