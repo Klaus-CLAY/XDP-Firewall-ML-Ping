@@ -25,7 +25,7 @@ RUN apt-get install net-tools bash bash-completion -y
 
 WORKDIR /app-ddos-detection
 COPY ddos_ml/echo_server/server.py echo_server/
-COPY ddos_ml/dt_model.pk .
+COPY ddos_ml/dt_model.pkl .
 COPY ddos_ml/sniff.py .
 
 
