@@ -38,10 +38,12 @@ def sniff_packet_df(sniff_if, sniff_filter='ip', sniff_timeout=1):
         p['Frame_length'] = len(packet['IP'])
 
         packet_list.append(p)
+    
+    if not len(capture):
+        return None
 
     return pd.DataFrame(packet_list)[["Time", "Source_ip", 'Source_Port', 'Destination_IP',
                                       'Destination_Port', 'Frame_length']]
-
 
 def xdp_fw_conf_to_json(raw_file_str):
     conf = dict()
@@ -63,7 +65,6 @@ def xdp_fw_conf_to_json(raw_file_str):
     filters_str = f"[{filters_str}]"
     conf['filters'] = json.loads(filters_str)
     return conf
-
 
 def json_to_xdp_fw_conf(json_cfg):
     fw_conf = ''
@@ -89,7 +90,6 @@ def json_to_xdp_fw_conf(json_cfg):
     fw_conf += ");"
 
     return fw_conf
-
 
 def change_xdp_fw_config(conf_file_path):
     raw_file_str = ''
@@ -124,6 +124,8 @@ if __name__ == '__main__':
                         help='specify a name for output file', default='dump.csv')
     parser.add_argument('--interface', '-if', dest='interface',
                         help='specify an interface to sniff on', default='lo')
+    parser.add_argument('--conf-path', dest='xdp_fw_conf_path',
+                        help='path to xdp firewall config file ', default='xdpfw.conf.example')
     args = parser.parse_args()
 
     # n consecutive malicious flows -> Block!
@@ -132,7 +134,6 @@ if __name__ == '__main__':
     IF_BLOCK_THRESHOLD = 10
     NORMAL_TRAFFIC = 0
     MAL_TRAFFIC = 1
-    XDP_FW_CONF_PATH = 'xdpfw.conf.example'
     CURR_EPOCH_TIME = int(time.time())
     operation_timestamp = 0
 
@@ -142,6 +143,9 @@ if __name__ == '__main__':
     flow_df = pd.DataFrame()
     while True:
         packet_df = sniff_packet_df(args.interface, sniff_timeout=1)
+        if packet_df is None:
+            print('No packets received on this interface.')
+            continue
         flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
             packet_df, is_labeled=False)])
         if len(flow_df) > DDOS_THRESHOLD:
@@ -166,6 +170,5 @@ if __name__ == '__main__':
             if traffic_type == MAL_TRAFFIC:
                 print(
                     f'attempting to reduce traffic on interface \'{args.interface}\'')
-                # edit xdp-firewall's config file
-                change_xdp_fw_config(XDP_FW_CONF_PATH)
+                change_xdp_fw_config(args.xdp_fw_conf_path)
                 operation_timestamp = time.time()
