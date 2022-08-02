@@ -1,9 +1,0 @@
-interface = "eth0";
-updatetime = 15;
-
-filters = (
-    {
-        enabled = true,
-        action = 1
-    }
-);

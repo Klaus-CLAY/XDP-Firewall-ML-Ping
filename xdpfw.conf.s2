@@ -1,0 +1,19 @@
+interface = "server-s2";
+updatetime = 1;
+
+filters = (
+    {
+        enabled = true,
+        action = 1,
+        srcip = "10.0.0.1"
+    },
+    {
+        enabled = true,
+        action = 1,
+        srcip = "10.0.0.3"
+    },
+    {
+        enabled = true,
+        action = 1
+    }
+);
