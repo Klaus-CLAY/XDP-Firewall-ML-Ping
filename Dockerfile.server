@@ -41,6 +41,8 @@ COPY libbpf libbpf
 COPY other other
 COPY src src
 COPY Makefile .
-COPY xdpfw.conf.example .
+COPY xdpfw.conf.s1 .
+COPY xdpfw.conf.s2 .
+
 
 CMD ["bash"]

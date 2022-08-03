@@ -5,7 +5,7 @@ filters = (
     {
         enabled = true,
         action = 0,
-        icmp_enabled = true
+        srcip = "11.0.0.5"
     },
     {
         enabled = true,

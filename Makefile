@@ -47,7 +47,8 @@ clean:
 	rm -f $(BUILDDIR)/$(XDPFWOUT)
 install:
 	mkdir -p /etc/xdpfw/
-	cp -n xdpfw.conf.example /etc/xdpfw/xdpfw.conf
+	cp xdpfw.conf.s1 /etc/xdpfw/xdpfw.conf.s1
+	cp xdpfw.conf.s2 /etc/xdpfw/xdpfw.conf.s2
 	cp $(BUILDDIR)/$(XDPPROGOBJ) /etc/xdpfw/$(XDPPROGOBJ)
 	cp $(BUILDDIR)/$(XDPFWOUT) /usr/bin/$(XDPFWOUT)
 	cp -n other/xdpfw.service /etc/systemd/system/
