@@ -131,7 +131,8 @@ if __name__ == '__main__':
     # n consecutive malicious flows -> Block!
     DDOS_THRESHOLD = 2
     # n seconds after changing to whitelist if problem still exists, block the interface
-    IF_BLOCK_THRESHOLD = 10
+    IF_BLOCK_WAIT_TIME = 10
+    PACKET_COUNT_THRESHOLD = 10
     NORMAL_TRAFFIC = 0
     MAL_TRAFFIC = 1
     CURR_EPOCH_TIME = int(time.time())
@@ -143,11 +144,11 @@ if __name__ == '__main__':
     flow_df = pd.DataFrame()
     while True:
         packet_df = sniff_packet_df(args.interface, sniff_timeout=1)
-        if packet_df is None:
-            print('No packets received on this interface.')
+        if packet_df is None or len(packet_df) < PACKET_COUNT_THRESHOLD:
+            print('too few packets received on this interface. --> Normal')
             continue
         flow_df = pd.concat([flow_df, flow_df_generator.generate_flow_dataframe(
-            packet_df, is_labeled=False)])
+            packet_df, is_labeled=False, sniff_timeout=1)])
         if len(flow_df) > DDOS_THRESHOLD:
             flow_df = flow_df.tail(DDOS_THRESHOLD)
         if args.dump_traffic:
@@ -156,7 +157,7 @@ if __name__ == '__main__':
 
         # print metrics
         for feature in flow_df.iloc[-1]:
-            print("{0:.6f}".format(feature), end='\t')
+            print("{0:.6f}".format(feature), end='    ')
 
         # print traffic type
         x = flow_df[flow_df.columns.difference(['Mean_Time'])]
@@ -166,7 +167,7 @@ if __name__ == '__main__':
         print(
             f"--> {predicted_list}, {'Malicious' if traffic_type == MAL_TRAFFIC else 'Normal'}")
 
-        if args.operate and (time.time() - operation_timestamp) > IF_BLOCK_THRESHOLD:
+        if args.operate and (time.time() - operation_timestamp) > IF_BLOCK_WAIT_TIME:
             if traffic_type == MAL_TRAFFIC:
                 print(
                     f'attempting to reduce traffic on interface \'{args.interface}\'')

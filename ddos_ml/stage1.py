@@ -26,9 +26,9 @@ class FlowDfGenerator:
 
         return df
 
-    def generate_flow_dataframe(self, df, chunk_size=None, is_labeled=True):
+    def generate_flow_dataframe(self, df, chunk_size=None, is_labeled=True, sniff_timeout=1):
         if chunk_size is None:
-            return pd.DataFrame([self.__process_packet_flows(df, self.attack_intervals, is_labeled)])
+            return pd.DataFrame([self.__process_packet_flows(df, self.attack_intervals, sniff_timeout, is_labeled)])
 
         flow_list = []
         for i in range(len(df)//chunk_size):
@@ -36,13 +36,14 @@ class FlowDfGenerator:
             end = chunk_size*(i+1)
             end = end if end < len(df) else -1
             flow_list.append(self.__process_packet_flows(
-                df[start:end], self.attack_intervals, is_labeled))
+                df[start:end], self.attack_intervals, sniff_timeout, is_labeled))
 
         return pd.DataFrame(flow_list)
 
-    def __process_packet_flows(self, df, attack_intervals, is_labeled=True):
+    def __process_packet_flows(self, df, attack_intervals, sniff_timeout, is_labeled):
         log_row = dict()
         time_interval = df['Time'].max() - df['Time'].min()
+        time_interval = time_interval if time_interval != 0 else sniff_timeout
         # mean_time = df['Time'].mean()
         # print(f'mean time: {mean_time}')
 
@@ -53,7 +54,7 @@ class FlowDfGenerator:
         log_row['SSIP'] = unique_src_ip_count / time_interval
         log_row['SSP'] = unique_src_port_count / time_interval
         # log_row['SDFP']
-        log_row['SDFB'] = df['Frame_length'].std()
+        log_row['SDFB'] = df['Frame_length'].std(ddof=0)
         log_row['SFE'] = len(df) / time_interval
         log_row['RPF'] = self.__calc_pair_flow_ratio(df)
         if is_labeled:
