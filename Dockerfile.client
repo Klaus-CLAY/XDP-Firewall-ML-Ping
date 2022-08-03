@@ -12,8 +12,10 @@ RUN echo ***************************************2
 RUN apt install bash bash-completion -y
 RUN echo ***************************************3
 RUN apt install python3 -y
+RUN apt install strace -y
 
 WORKDIR /app
 COPY ddos_ml/echo_server/client.py .
+COPY show_process_output.sh .
 
 CMD ["bash"]

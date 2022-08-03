@@ -26,15 +26,7 @@ RUN echo ***************************************8
 RUN python3 -m pip install sklearn wheel
 RUN echo ***************************************9
 RUN apt install python3-scapy -y
-
-
-WORKDIR /app-ddos-detection
-COPY ddos_ml/echo_server/server.py echo_server/
-COPY ddos_ml/dt_model.pkl .
-COPY ddos_ml/sniff.py .
-COPY ddos_ml/stage1.py .
-COPY ddos_ml/stage2.py .
-
+RUN apt install strace -y
 
 WORKDIR /app-xdp-fw
 COPY libbpf libbpf
@@ -43,6 +35,16 @@ COPY src src
 COPY Makefile .
 COPY xdpfw.conf.s1 .
 COPY xdpfw.conf.s2 .
+
+WORKDIR /app-ddos-detection
+COPY ddos_ml/echo_server/server.py echo_server/
+COPY ddos_ml/dt_model.pkl .
+COPY ddos_ml/sniff.py .
+COPY ddos_ml/stage1.py .
+COPY ddos_ml/stage2.py .
+COPY show_process_output.sh .
+
+
 
 
 CMD ["bash"]
