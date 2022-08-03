@@ -423,6 +423,7 @@ int main(int argc, char *argv[])
 
         return EXIT_FAILURE;
     }
+    printf("target interface: %s , index: %d\n", cfg.interface, ifidx);
 
     // XDP variables.
     int progfd;

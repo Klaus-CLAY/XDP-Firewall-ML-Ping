@@ -3,6 +3,7 @@ import socket
 from time import sleep
 
 if __name__ == '__main__':
+    TIME_INTERVAL = 0.2
     parser = argparse.ArgumentParser()
     parser.add_argument('--ip', dest='server_ip',
                         help='server IP address', default='127.0.0.1')
@@ -16,7 +17,7 @@ if __name__ == '__main__':
         s.connect((args.server_ip, int(args.server_port)))
         while True:
             try:
-                sleep(2)
+                sleep(TIME_INTERVAL)
                 s.send(bytes(args.text, 'utf-8'))
                 data = s.recv(1024)
                 print(f"Received \'{data.decode('utf-8')}\'")
