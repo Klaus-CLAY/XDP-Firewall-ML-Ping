@@ -71,22 +71,22 @@ def testTopo():
     net.addLinkNamedIfce(s2, client3, bw=10, delay="10ms")
     net.addLinkNamedIfce(s2, attacker)
 
-    info("*** assigning ip to server 2's second interface\n")
+    info("*** assigning ip to server's second interface\n")
     intf = server.intf('server-s2')
     intf.setIP('10.0.1.1/8')
 
     info("*** Starting network\n")
     net.start()
 
-    info(f"*** testing connections before xdpfw:\n")
-    test_connection(client1, "10.0.1.1", 5)
-    test_connection(client2, "10.0.1.1", 5)
-    test_connection(client3, "10.0.1.1", 5)
-    test_connection(attacker, "10.0.1.1", 5)
-    test_connection(client4, "11.0.1.1", 5)
-    test_connection(client5, "11.0.1.1", 5)
-
-    info(f"*** initiating legit traffic")
+    # info("*** testing connections before xdpfw:\n")
+    # test_connection(client1, "10.0.1.1", 3)
+    # test_connection(client2, "10.0.1.1", 3)
+    # test_connection(client3, "10.0.1.1", 3)
+    # test_connection(attacker, "10.0.1.1", 3)
+    # test_connection(client4, "11.0.1.1", 3)
+    # test_connection(client5, "11.0.1.1", 3)
+    
+    info("*** initiating legit traffic\n")
     server.cmd("python3 /app-ddos-detection/echo_server/server.py --ip 10.0.1.1 --port 60000 &")
     client1.cmd("python3 /app/client.py --ip 10.0.1.1 --port 60000 -t client1_text &")
     client2.cmd("python3 /app/client.py --ip 10.0.1.1 --port 60000 -t client2 &")
@@ -94,20 +94,39 @@ def testTopo():
     server.cmd("python3 /app-ddos-detection/echo_server/server.py --ip 11.0.1.1 --port 60001 &")
     client4.cmd("python3 /app/client.py --ip 11.0.1.1 --port 60001 -t some_random_text_by_c4 &")
 
+    info("*** running xdpfw on both interfaces\n")
+    server.cmd("cd /app-xdp-fw/ && make && make install")
+    server.cmd("xdpfw --config /etc/xdpfw/xdpfw.conf.s1 &")
+    server.cmd("xdpfw --config /etc/xdpfw/xdpfw.conf.s2 &")
 
-    # log = server.cmd("cd /app-xdp-fw/ && make && make install")
+    info("*** running ddos detection on both interfaces\n")
+    server.cmd("cd /app-ddos-detection")
+    server.cmd(
+        "printf -- '#!/bin/bash\n" +
+        "python3 /app-ddos-detection/sniff.py -if server-s1 --conf-path /etc/xdpfw/xdpfw.conf.s1 --operate &\n' > ddd_s1.sh;" +
+        "chmod +x ddd_s1.sh; ./ddd_s1.sh")
+    server.cmd(
+        "printf -- '#!/bin/bash\n" +
+        "python3 /app-ddos-detection/sniff.py -if server-s2 --conf-path /etc/xdpfw/xdpfw.conf.s2 --operate &\n' > ddd_s2.sh;" +
+        "chmod +x ddd_s2.sh; ./ddd_s2.sh")
 
-    spawnXtermDocker("server")
+    # info("*** testing connections after xdpfw:\n")
+    # test_connection(client1, "10.0.1.1", 3)
+    # test_connection(client2, "10.0.1.1", 3)
+    # test_connection(client3, "10.0.1.1", 3)
+    # test_connection(attacker, "10.0.1.1", 3)
+    # test_connection(client4, "11.0.1.1", 3)
+    # test_connection(client5, "11.0.1.1", 3)
+
     spawnXtermDocker("server")
     spawnXtermDocker("attacker")
-    spawnXtermDocker("client5")
-
     CLI(net)
+
     info("*** Stopping network\n")
     net.stop()
 
 def test_connection(source_container, target_ip, ping_count=10):
-    info("*** Test the connection\n")
+    info(f"*** {source_container.docker_args['hostname']} --> {target_ip}\n")
     info("* Ping test count: %d" % ping_count)
     ret = source_container.cmd("ping -c " + str(ping_count) + " " + target_ip)
     sent, received = tool.parsePing(ret)
