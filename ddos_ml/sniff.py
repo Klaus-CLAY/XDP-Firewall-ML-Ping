@@ -137,8 +137,9 @@ if __name__ == '__main__':
     MAL_TRAFFIC = 1
     CURR_EPOCH_TIME = int(time.time())
     operation_timestamp = 0
+    dir_path = os.path.dirname(os.path.realpath(__file__))
 
-    with open('dt_model.pkl', 'rb') as f:
+    with open(f'{dir_path}/dt_model.pkl', 'rb') as f:
         loaded_model = pickle.load(f)
     flow_df_generator = FlowDfGenerator()
     flow_df = pd.DataFrame()
