@@ -28,12 +28,13 @@ def compare_results(actual_res, predicted_res):
 
 
 if __name__ == '__main__':
-    flow_df = pd.read_csv(r'dump_4clients_0.2interval_fabbed.csv')
+    flow_df = pd.read_csv(r'datasets/dump_4clients_0.2interval_final.csv')
     x = flow_df[flow_df.columns.difference(['Traffic_Type', 'Mean_Time'])]
     y = flow_df['Traffic_Type']
     x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=0, train_size = .65)
 
     model = KMeans(n_clusters=2)
+    # FIXME: cluster indexes may vary by each run. make sure to get cluster 1 as MALICIOUS_TRAFFIC
     model.fit(x_train)
 
     # save

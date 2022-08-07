@@ -134,7 +134,7 @@ if __name__ == '__main__':
     DDOS_THRESHOLD = 2
     # n seconds after changing to whitelist if problem still exists, block the interface
     IF_BLOCK_WAIT_TIME = 10
-    PACKET_COUNT_THRESHOLD = 10
+    PACKET_COUNT_THRESHOLD = 5
     NORMAL_TRAFFIC = 0
     MAL_TRAFFIC = 1
     CURR_EPOCH_TIME = int(time.time())

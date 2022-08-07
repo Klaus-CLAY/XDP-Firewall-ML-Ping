@@ -28,7 +28,7 @@ RUN echo ***************************************9
 RUN apt install python3-scapy -y
 RUN apt install strace -y
 
-WORKDIR /app-xdp-fw
+WORKDIR /app_xdp_fw
 COPY libbpf libbpf
 COPY other other
 COPY src src
@@ -36,13 +36,12 @@ COPY Makefile .
 COPY xdpfw.conf.s1 .
 COPY xdpfw.conf.s2 .
 
-WORKDIR /app-ddos-detection
+WORKDIR /app_ddos_detection
 COPY ddos_ml/echo_server/server.py echo_server/
 COPY ddos_ml/dt_model.pkl .
 COPY ddos_ml/kmeans_model.pkl .
 COPY ddos_ml/sniff.py .
 COPY ddos_ml/stage1.py .
-COPY ddos_ml/stage2.py .
 COPY show_process_output.sh .
 
 

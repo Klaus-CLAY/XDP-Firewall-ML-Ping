@@ -4,11 +4,11 @@ from scapy.layers.inet import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--target-ip', dest='target_ip', default='192.168.1.1')
+    parser.add_argument('--target-ip', dest='target_ip', default='10.0.1.1')
     parser.add_argument('--target-port', dest='target_port', default='80')
     parser.add_argument('--sip-mask', dest='sip_mask', default='16')
     parser.add_argument('--interface', '-if', dest='interface', default='lo')
-    parser.add_argument('--interval', dest='interval', default='0.01')
+    parser.add_argument('--interval', dest='interval', default='0.0001')
     parser.add_argument('--verbose', '-v', dest='verbose',
                         action='store_true', default=False)
     args = parser.parse_args()
