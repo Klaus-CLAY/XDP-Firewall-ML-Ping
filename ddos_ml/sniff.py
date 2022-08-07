@@ -118,10 +118,12 @@ if __name__ == '__main__':
     parser.add_argument('--operate', dest='operate',
                         help='give this flag to analyze flows and block inbound packets if malicious traffic is detected',
                         action='store_true', default=False)
+    parser.add_argument('--ml-model', dest='ml_model',
+                        help='specify the ML model to be loaded', default='kmeans_model.pkl')
     parser.add_argument('--dump', '-d', dest='dump_traffic',
                         help='give this flag to capture and dump the traffic', action='store_true', default=False)
     parser.add_argument('--dump-output', '-do', dest='dump_output',
-                        help='specify a name for output file', default='dump.csv')
+                        help='specify a name for output dump file', default='dump.csv')
     parser.add_argument('--interface', '-if', dest='interface',
                         help='specify an interface to sniff on', default='lo')
     parser.add_argument('--conf-path', dest='xdp_fw_conf_path',
@@ -139,7 +141,7 @@ if __name__ == '__main__':
     operation_timestamp = 0
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
-    with open(f'{dir_path}/dt_model.pkl', 'rb') as f:
+    with open(f'{dir_path}/{args.ml_model}', 'rb') as f:
         loaded_model = pickle.load(f)
     flow_df_generator = FlowDfGenerator()
     flow_df = pd.DataFrame()
